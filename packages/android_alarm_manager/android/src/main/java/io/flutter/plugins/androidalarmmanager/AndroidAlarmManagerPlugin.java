@@ -25,9 +25,16 @@ public class AndroidAlarmManagerPlugin implements MethodCallHandler, ViewDestroy
             registrar.messenger(),
             "plugins.flutter.io/android_alarm_manager",
             JSONMethodCodec.INSTANCE);
+    final MethodChannel backgroundChannel =
+        new MethodChannel(
+            registrar.messenger(),
+            "plugins.flutter.io/android_alarm_manager_background",
+            JSONMethodCodec.INSTANCE);
     AndroidAlarmManagerPlugin plugin = new AndroidAlarmManagerPlugin(registrar.context());
     channel.setMethodCallHandler(plugin);
+    backgroundChannel.setMethodCallHandler(plugin);
     registrar.addViewDestroyListener(plugin);
+    AlarmService.setBackgroundChannel(backgroundChannel);
   }
 
   private Context mContext;
@@ -41,7 +48,13 @@ public class AndroidAlarmManagerPlugin implements MethodCallHandler, ViewDestroy
     String method = call.method;
     Object arguments = call.arguments;
     try {
-      if (method.equals("Alarm.periodic")) {
+      if (method.equals("AlarmService.start")) {
+        startService((JSONArray) arguments);
+        result.success(true);
+      } else if (method.equals("AlarmService.initialized")) {
+        AlarmService.onInitialized();
+        result.success(true);
+      } else if (method.equals("Alarm.periodic")) {
         periodic((JSONArray) arguments);
         result.success(true);
       } else if (method.equals("Alarm.oneShot")) {
@@ -55,7 +68,15 @@ public class AndroidAlarmManagerPlugin implements MethodCallHandler, ViewDestroy
       }
     } catch (JSONException e) {
       result.error("error", "JSON error: " + e.getMessage(), null);
+    } catch (PluginRegistrantException e) {
+      result.error("error", "AlarmManager error: " + e.getMessage(), null);
     }
+  }
+
+  private void startService(JSONArray arguments) throws JSONException {
+    long callbackHandle = arguments.getLong(0);
+    AlarmService.setCallbackDispatcher(mContext, callbackHandle);
+    AlarmService.startAlarmService(mContext, callbackHandle);
   }
 
   private void oneShot(JSONArray arguments) throws JSONException {
@@ -63,8 +84,10 @@ public class AndroidAlarmManagerPlugin implements MethodCallHandler, ViewDestroy
     boolean exact = arguments.getBoolean(1);
     boolean wakeup = arguments.getBoolean(2);
     long startMillis = arguments.getLong(3);
-    String entrypoint = arguments.getString(4);
-    AlarmService.setOneShot(mContext, requestCode, exact, wakeup, startMillis, entrypoint);
+    boolean rescheduleOnReboot = arguments.getBoolean(4);
+    long callbackHandle = arguments.getLong(5);
+    AlarmService.setOneShot(
+        mContext, requestCode, exact, wakeup, startMillis, rescheduleOnReboot, callbackHandle);
   }
 
   private void periodic(JSONArray arguments) throws JSONException {
@@ -73,9 +96,17 @@ public class AndroidAlarmManagerPlugin implements MethodCallHandler, ViewDestroy
     boolean wakeup = arguments.getBoolean(2);
     long startMillis = arguments.getLong(3);
     long intervalMillis = arguments.getLong(4);
-    String entrypoint = arguments.getString(5);
+    boolean rescheduleOnReboot = arguments.getBoolean(5);
+    long callbackHandle = arguments.getLong(6);
     AlarmService.setPeriodic(
-        mContext, requestCode, exact, wakeup, startMillis, intervalMillis, entrypoint);
+        mContext,
+        requestCode,
+        exact,
+        wakeup,
+        startMillis,
+        intervalMillis,
+        rescheduleOnReboot,
+        callbackHandle);
   }
 
   private void cancel(JSONArray arguments) throws JSONException {
@@ -85,6 +116,6 @@ public class AndroidAlarmManagerPlugin implements MethodCallHandler, ViewDestroy
 
   @Override
   public boolean onViewDestroy(FlutterNativeView nativeView) {
-    return AlarmService.setSharedFlutterView(nativeView);
+    return AlarmService.setBackgroundFlutterView(nativeView);
   }
 }

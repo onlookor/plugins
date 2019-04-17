@@ -17,7 +17,7 @@ class Battery {
           const MethodChannel('plugins.flutter.io/battery');
       final EventChannel eventChannel =
           const EventChannel('plugins.flutter.io/charging');
-      _instance = new Battery.private(methodChannel, eventChannel);
+      _instance = Battery.private(methodChannel, eventChannel);
     }
     return _instance;
   }
@@ -33,7 +33,7 @@ class Battery {
 
   /// Returns the current battery level in percent.
   Future<int> get batteryLevel => _methodChannel
-      .invokeMethod('getBatteryLevel')
+      .invokeMethod<int>('getBatteryLevel')
       .then<int>((dynamic result) => result);
 
   /// Fires whenever the battery state changes.
@@ -56,6 +56,6 @@ BatteryState _parseBatteryState(String state) {
     case 'discharging':
       return BatteryState.discharging;
     default:
-      throw new ArgumentError('$state is not a valid BatteryState.');
+      throw ArgumentError('$state is not a valid BatteryState.');
   }
 }

@@ -44,7 +44,7 @@ void main() {
       );
       expect(remoteConfig.remoteConfigSettings.debugMode, true);
       expect(remoteConfig.lastFetchTime,
-          new DateTime.fromMillisecondsSinceEpoch(lastFetchTime));
+          DateTime.fromMillisecondsSinceEpoch(lastFetchTime));
       expect(remoteConfig.lastFetchStatus, LastFetchStatus.values[0]);
     });
 
@@ -71,6 +71,8 @@ void main() {
           .setMockMethodCallHandler((MethodCall methodCall) async {
         log.add(methodCall);
         switch (methodCall.method) {
+          case 'RemoteConfig#setDefaults':
+            return null;
           case 'RemoteConfig#fetch':
             return <String, dynamic>{
               'lastFetchTime': lastFetchTime,
@@ -110,6 +112,22 @@ void main() {
       log.clear();
     });
 
+    test('setDefaults', () async {
+      await remoteConfig.setDefaults(<String, dynamic>{
+        'foo': 'bar',
+      });
+      expect(log, <Matcher>[
+        isMethodCall(
+          'RemoteConfig#setDefaults',
+          arguments: <String, dynamic>{
+            'defaults': <String, dynamic>{
+              'foo': 'bar',
+            },
+          },
+        ),
+      ]);
+    });
+
     test('fetch', () async {
       await remoteConfig.fetch(expiration: const Duration(hours: 1));
       expect(
@@ -146,7 +164,7 @@ void main() {
     test('setConfigSettings', () async {
       expect(remoteConfig.remoteConfigSettings.debugMode, true);
       final RemoteConfigSettings remoteConfigSettings =
-          new RemoteConfigSettings(debugMode: false);
+          RemoteConfigSettings(debugMode: false);
       await remoteConfig.setConfigSettings(remoteConfigSettings);
       expect(
         log,

@@ -7,22 +7,27 @@ part of cloud_firestore;
 typedef Future<dynamic> TransactionHandler(Transaction transaction);
 
 class Transaction {
-  int _transactionId;
-  Firestore _firestore;
-
   @visibleForTesting
   Transaction(this._transactionId, this._firestore);
 
+  int _transactionId;
+  Firestore _firestore;
+
   Future<DocumentSnapshot> get(DocumentReference documentReference) async {
-    final dynamic result = await Firestore.channel
-        .invokeMethod('Transaction#get', <String, dynamic>{
+    final Map<dynamic, dynamic> result = await Firestore.channel
+        .invokeMethod<Map<dynamic, dynamic>>(
+            'Transaction#get', <String, dynamic>{
       'app': _firestore.app.name,
       'transactionId': _transactionId,
       'path': documentReference.path,
     });
     if (result != null) {
-      return new DocumentSnapshot._(documentReference.path,
-          result['data']?.cast<String, dynamic>(), Firestore.instance);
+      return DocumentSnapshot._(
+          documentReference.path,
+          result['data']?.cast<String, dynamic>(),
+          SnapshotMetadata._(result['metadata']['hasPendingWrites'],
+              result['metadata']['isFromCache']),
+          _firestore);
     } else {
       return null;
     }
@@ -30,7 +35,7 @@ class Transaction {
 
   Future<void> delete(DocumentReference documentReference) async {
     return Firestore.channel
-        .invokeMethod('Transaction#delete', <String, dynamic>{
+        .invokeMethod<void>('Transaction#delete', <String, dynamic>{
       'app': _firestore.app.name,
       'transactionId': _transactionId,
       'path': documentReference.path,
@@ -40,7 +45,7 @@ class Transaction {
   Future<void> update(
       DocumentReference documentReference, Map<String, dynamic> data) async {
     return Firestore.channel
-        .invokeMethod('Transaction#update', <String, dynamic>{
+        .invokeMethod<void>('Transaction#update', <String, dynamic>{
       'app': _firestore.app.name,
       'transactionId': _transactionId,
       'path': documentReference.path,
@@ -50,7 +55,8 @@ class Transaction {
 
   Future<void> set(
       DocumentReference documentReference, Map<String, dynamic> data) async {
-    return Firestore.channel.invokeMethod('Transaction#set', <String, dynamic>{
+    return Firestore.channel
+        .invokeMethod<void>('Transaction#set', <String, dynamic>{
       'app': _firestore.app.name,
       'transactionId': _transactionId,
       'path': documentReference.path,

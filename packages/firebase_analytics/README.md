@@ -18,20 +18,23 @@ To track `PageRoute` transitions, add a `FirebaseAnalyticsObserver` to the list 
 
 ```dart
 
-FirebaseAnalytics analytics = new FirebaseAnalytics();
+FirebaseAnalytics analytics = FirebaseAnalytics();
 
 MaterialApp(
-  home: new MyAppHome(),
+  home: MyAppHome(),
   navigatorObservers: [
-    new FirebaseAnalyticsObserver(analytics: analytics),
+    FirebaseAnalyticsObserver(analytics: analytics),
   ],
 );
 ```
 
 You can also track transitions within your `PageRoute` (e.g. when the user switches from one tab to another) by
-implementing `RouteAware` and subscribing it to `FirebaseAnalyticsObserver`. See `examples/lib/tabs_page.dart`
+implementing `RouteAware` and subscribing it to `FirebaseAnalyticsObserver`. See [`example/lib/tabs_page.dart`][tabs_page]
 for an example of how to wire that up.
 
 ## Getting Started
 
-See the `example` directory for a complete sample app using Google Analytics for Firebase.
+See the [`example`][example] directory for a complete sample app using Google Analytics for Firebase.
+
+[example]: https://github.com/flutter/plugins/tree/master/packages/firebase_analytics/example
+[tabs_page]: https://github.com/flutter/plugins/tree/master/packages/firebase_analytics/example/lib/tabs_page.dart
